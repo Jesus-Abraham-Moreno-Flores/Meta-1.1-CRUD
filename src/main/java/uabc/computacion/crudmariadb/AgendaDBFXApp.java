@@ -11,25 +11,24 @@ import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 
 public class AgendaDBFXApp extends Application {
 
     private AgendaDAO dao;
 
-    private TableView<Persona> tablaPersonas = new TableView<>();
-    private TextField txtNombre = new TextField();
-    private TextField txtDireccionPer = new TextField();
-    private ObservableList<Persona> listaPersonas = FXCollections.observableArrayList();
+    private final TableView<Persona> tablaPersonas = new TableView<>();
+    private final TextField txtNombre = new TextField();
+    private final TextField txtDireccionPer = new TextField();
+    private final ObservableList<Persona> listaPersonas = FXCollections.observableArrayList();
 
-    private TableView<Direccion> tablaDirecciones = new TableView<>();
-    private TextField txtCalle = new TextField();
-    private TextField txtCiudad = new TextField();
-    private ObservableList<Direccion> listaDirecciones = FXCollections.observableArrayList();
+    private final TableView<Direccion> tablaDirecciones = new TableView<>();
+    private final TextField txtCalle = new TextField();
+    private final TextField txtCiudad = new TextField();
+    private final ObservableList<Direccion> listaDirecciones = FXCollections.observableArrayList();
 
-    private TableView<Telefono> tablaTelefonos = new TableView<>();
-    private TextField txtNumeroTel = new TextField();
-    private ObservableList<Telefono> listaTelefonos = FXCollections.observableArrayList();
+    private final TableView<Telefono> tablaTelefonos = new TableView<>();
+    private final TextField txtNumeroTel = new TextField();
+    private final ObservableList<Telefono> listaTelefonos = FXCollections.observableArrayList();
 
     public static void main(String[] args) {
         launch(args);
@@ -37,14 +36,34 @@ public class AgendaDBFXApp extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        primaryStage.setTitle("Agenda DB - MariaDB CRUD");
-        inicializarConexion();
+        primaryStage.setTitle("Agenda DB - Aplicación SOLID con JavaFX");
 
+        if (!inicializarConexion()) {
+            return; // Se detiene la construcción de la UI si no hay conexión para evitar NullPointerException
+        }
+
+        configurarUI(primaryStage);
+        cargarPersonas();
+    }
+
+    private boolean inicializarConexion() {
+        try {
+            Connection conn = DatabaseConnection.getConnection();
+            this.dao = new AgendaDB(conn);
+            return true;
+        } catch (Exception e) {
+            mostrarAlerta("Error de Conexión", "No se pudo establecer conexión a MariaDB:\n" + e.getMessage());
+            return false;
+        }
+    }
+
+    private void configurarUI(Stage primaryStage) {
+        // Sección Personas
         TableColumn<Persona, Integer> colId = new TableColumn<>("ID");
         colId.setCellValueFactory(new PropertyValueFactory<>("id"));
         TableColumn<Persona, String> colNom = new TableColumn<>("Nombre");
         colNom.setCellValueFactory(new PropertyValueFactory<>("nombre"));
-        TableColumn<Persona, String> colDir = new TableColumn<>("Dirección General");
+        TableColumn<Persona, String> colDir = new TableColumn<>("Dirección Principal");
         colDir.setCellValueFactory(new PropertyValueFactory<>("direccion"));
 
         tablaPersonas.getColumns().addAll(colId, colNom, colDir);
@@ -77,6 +96,7 @@ public class AgendaDBFXApp extends Application {
 
         VBox boxPersonas = new VBox(8, new Label("=== PERSONAS ==="), gridPer, new HBox(10, btnAddPer, btnUpdPer, btnDelPer), tablaPersonas);
 
+        // Sección Direcciones N:M
         TableColumn<Direccion, String> colCalle = new TableColumn<>("Calle");
         colCalle.setCellValueFactory(new PropertyValueFactory<>("calle"));
         TableColumn<Direccion, String> colCiudad = new TableColumn<>("Ciudad");
@@ -96,8 +116,9 @@ public class AgendaDBFXApp extends Application {
         gridDir.add(new Label("Calle:"), 0, 0); gridDir.add(txtCalle, 1, 0);
         gridDir.add(new Label("Ciudad:"), 0, 1); gridDir.add(txtCiudad, 1, 1);
 
-        VBox boxDirecciones = new VBox(8, new Label("=== DIRECCIONES ASOCIADAS ==="), gridDir, new HBox(10, btnAddDir, btnDelDir), tablaDirecciones);
+        VBox boxDirecciones = new VBox(8, new Label("=== DIRECCIONES ASOCIADAS (N:M) ==="), gridDir, new HBox(10, btnAddDir, btnDelDir), tablaDirecciones);
 
+        // Sección Teléfonos
         TableColumn<Telefono, String> colTel = new TableColumn<>("Teléfono");
         colTel.setCellValueFactory(new PropertyValueFactory<>("telefono"));
 
@@ -120,27 +141,16 @@ public class AgendaDBFXApp extends Application {
         VBox root = new VBox(15, boxPersonas, panelInferior);
         root.setPadding(new Insets(10));
 
-        cargarPersonas();
-
         Scene scene = new Scene(root, 650, 650);
         primaryStage.setScene(scene);
         primaryStage.show();
-    }
-
-    private void inicializarConexion() {
-        try {
-            Connection conn = DriverManager.getConnection("jdbc:mariadb://localhost:3307/agenda", "usuario1", "superpassword");
-            dao = new AgendaDB(conn);
-        } catch (Exception e) {
-            mostrarAlerta("Error de Conexión", e.getMessage());
-        }
     }
 
     private void cargarPersonas() {
         try {
             listaPersonas.setAll(dao.obtenerPersonas());
         } catch (Exception e) {
-            mostrarAlerta("Error", e.getMessage());
+            mostrarAlerta("Error al Cargar Personas", e.getMessage());
         }
     }
 
@@ -149,7 +159,7 @@ public class AgendaDBFXApp extends Application {
             listaDirecciones.setAll(dao.obtenerDireccionesDePersona(idPersona));
             listaTelefonos.setAll(dao.obtenerTelefonosDePersona(idPersona));
         } catch (Exception e) {
-            mostrarAlerta("Error", e.getMessage());
+            mostrarAlerta("Error al Cargar Detalles", e.getMessage());
         }
     }
 

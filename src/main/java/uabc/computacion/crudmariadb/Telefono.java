@@ -18,6 +18,6 @@ public class Telefono extends AgendaDBBase {
 
     @Override
     public String obtenerResumen() {
-        return "Telefono: " + telefono;
+        return "Teléfono: " + telefono;
     }
 }

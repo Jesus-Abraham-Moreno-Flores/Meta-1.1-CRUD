@@ -5,9 +5,9 @@ import java.util.List;
 
 public class Persona extends AgendaDBBase {
     private String nombre;
-    private String direccion; // Columna presente en la tabla personas
-    private List<Direccion> direcciones = new ArrayList<>();
-    private List<Telefono> telefonos = new ArrayList<>();
+    private String direccion;
+    private final List<Direccion> direcciones = new ArrayList<>();
+    private final List<Telefono> telefonos = new ArrayList<>();
 
     public Persona(int id, String nombre, String direccion) {
         super(id);
